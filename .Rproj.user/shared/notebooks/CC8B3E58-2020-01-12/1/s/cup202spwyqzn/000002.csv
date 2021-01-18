@@ -1,0 +1,6 @@
+"0","joint <- artists %>% 
+  left_join(artwork, artistId)
+"
+"2","Error in standardise_join_by(by, x_names = x_names, y_names = y_names) : 
+  object 'artistId' not found
+"

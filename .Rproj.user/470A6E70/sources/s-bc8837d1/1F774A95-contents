@@ -1,0 +1,154 @@
+
+---
+title: '2021-02-12'
+author: "Brady Johnston"
+date: "15/01/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r morestup, cache = TRUE}
+library(tidytuesdayR)
+library(tidyverse)
+
+if (is.null(tuesdata)) {
+  tuesdata <- tt_load('2021-01-12')
+}
+
+artists <- tuesdata$artists
+artwork <- tuesdata$artwork
+```
+
+Let's do some initial poking around the dataset. Let's look first at the artists.
+
+When were the artists born, who appear in the gallery?
+
+```{r}
+tuesdata$artists %>% 
+  filter(!is.na(gender)) %>%
+  ggplot(aes(
+    x = yearOfBirth
+  )) + 
+  geom_histogram(binwidth = 10) + 
+  facet_grid(rows = vars(gender)) + 
+  theme_classic() + 
+  labs(title = "Total Count of Artists")
+```
+
+```{r}
+tuesdata$artists %>% 
+  filter(!is.na(gender)) %>%
+  ggplot(aes(
+    x = yearOfBirth
+  )) + 
+  geom_histogram(binwidth = 10, aes(y = ..ncount..)) + 
+  facet_grid(rows = vars(gender)) + 
+  theme_classic() + 
+  labs(title = "Relative Artist Count")
+```
+
+What about the percentage of artist who are marked as being one or the other.
+
+
+```{r}
+artists %>%
+  filter(!is.na(gender)) %>% 
+  left_join(artwork, by = "artistId") %>% 
+  
+  ggplot(aes(
+    x = width, 
+    y = height
+  )) + 
+  scale_x_log10() + 
+  scale_y_log10() +
+  geom_density2d_filled(contour_var = "ndensity") +
+  scale_fill_viridis_d(option = "C") +
+  # geom_point(alpha = 0.3) + 
+  facet_wrap(~gender)
+```
+
+Interesting that the male artwork is so heavily grouped into one area.
+
+```{r}
+artists %>% 
+  left_join(artwork, by = "artistId") %>% 
+  group_by(artistId) %>% 
+  count() %>% 
+  
+  ggplot(aes(
+    x = artistId, 
+    y = n
+  )) + 
+  geom_point()
+```
+
+It seems that one artist was particularly prolific. Let's exclude them from the further 
+analysis.
+
+```{r}
+artists %>% 
+  left_join(artwork, by = "artistId") %>% 
+  group_by(artistId, name) %>% 
+  count() %>% 
+  filter(n > 10000)
+```
+Looks like our artist has the id _558_.
+
+What if we filter out _Joseph Turner_?
+
+```{r}
+
+artists %>%
+  filter(!is.na(gender)) %>% 
+  left_join(artwork, by = "artistId") %>% 
+  
+  filter(artistId != 558) %>% 
+  
+  ggplot(aes(
+    x = width, 
+    y = height
+  )) +
+  scale_x_log10() + 
+  scale_y_log10() +
+  geom_density2d_filled(contour_var = "ndensity") +
+  scale_fill_viridis_d(option = "C") +
+  # geom_point(alpha = 0.3) + 
+  facet_wrap(~gender)
+```
+
+Now we have a much more even distribution. Looks like Turner had a particular size
+preference for their work. 
+
+```{r}
+artists %>%
+  filter(!is.na(gender)) %>% 
+  left_join(artwork, by = "artistId") %>% 
+  
+  filter(artistId == 558) %>% 
+  
+  ggplot(aes(
+    x = width, 
+    y = height
+  )) +
+  scale_x_log10() + 
+  scale_y_log10() +
+  geom_density2d_filled(contour_var = "ndensity") +
+  scale_fill_viridis_d(option = "C") +
+  facet_wrap(~gender)
+
+```
+
+What about when the artwork was acquired?
+
+```{r}
+joint <- artists %>% 
+  left_join(artwork, by = "artistId")
+
+joint %>%
+  ggplot()
+```
+
+
