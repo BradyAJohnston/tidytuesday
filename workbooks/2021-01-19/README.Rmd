@@ -1,0 +1,173 @@
+---
+title: '2021-01-19'
+author: "Brady Johnston"
+date: "19/01/2021"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidytuesdayR)
+library(tidyverse)
+
+tuesdata <- tt_load('2021-01-19')
+households <- tuesdata$households
+crops <- tuesdata$crops
+gender <- tuesdata$gender
+
+```
+
+## First Look
+```{r}
+households %>% head()
+```
+```{r}
+crops %>% 
+  head()
+```
+
+```{r}
+gender %>%
+  head()
+```
+
+## Some initial plotting
+```{r}
+crops %>%
+  ggplot(aes(x = SubCounty, 
+             y = Farming)) + 
+  geom_col() + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
+```
+
+Looksk like most of the farming is done in Kenya. What about if we exclude it?
+```{r}
+crops %>%
+  filter(SubCounty != "KENYA") %>% 
+  ggplot(aes(x = SubCounty, 
+             y = Farming)) + 
+  geom_col() + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
+```
+
+```{r, fig.width=10}
+crops %>% 
+  filter(SubCounty != "KENYA") %>% 
+  pivot_longer(cols = 3:ncol(crops), names_to = "Crop") %>%
+  
+  ggplot(aes(y = SubCounty, 
+             x = value, 
+             fill = Crop)) +
+  geom_col() + 
+  # facet_wrap(~Crop) + 
+  theme( legend.position = "") + 
+  theme_classic(base_size = 6)
+
+```
+
+
+Looks like there is a bunch of white space trailing the Counties.
+
+```{r}
+households %>% head() %>% pull(County)
+```
+
+```{r}
+households <- households %>%
+  mutate(County = stringr::str_trim(County))
+  
+households %>% head() %>%
+pull(County)
+```
+
+That is now looking better and should play nicer with the filters.
+
+```{r}
+p1 <- households %>%
+  # filter(County != "Kenya") %>%
+  ggplot(aes(x = AverageHouseholdSize, 
+             y = NumberOfHouseholds)) + 
+  geom_point()
+p1
+```
+
+```{r}
+library(ggrepel)
+p1 + geom_text_repel(aes(label = County))
+```
+
+
+```{r}
+households %>%
+  filter(County != "Kenya") %>%
+  ggplot(aes(x = AverageHouseholdSize, 
+             y = Population)) + 
+  geom_point()
+```
+
+```{r emoji}
+
+library(emojifont)
+
+cropnames <- colnames(crops)[3:ncol(crops)]
+cropnames
+```
+
+```{r}
+# emoji(search_emoji("cocoanut"))
+
+emojicrops <- data.frame(
+  crop = cropnames,
+  emoji = c("teapot", "coffee", "avocado", "citrus", "mango", "coconut", "macadamia", "cashew", "khat")
+)
+
+
+
+```
+
+
+```{r, fig.width=10}
+library(grid)
+library(ggtextures)
+
+crops %>% 
+  filter(SubCounty != "KENYA") %>%
+  pivot_longer(cols = 3:ncol(crops), names_to = 'crop') %>%
+  left_join(emojicrops) %>% 
+  mutate(emoji = paste0(emoji, ".png")) %>%
+  # mutate(image = readPNG(paste0(emoji, ".png"))) %>% head()
+ggplot(aes(x = crop, 
+           y = value)) + 
+  # geom_image(aes(image = emoji)) + 
+  geom_textured_col(aes(
+    image = emoji
+  ), fill = NA, colour = NA) + 
+  theme_void() + 
+  # facet_wrap(~SubCounty, strip.position = "bottom") + 
+  theme(panel.border = element_rect(fill = NA)) + 
+  labs(title = "hello")
+```
+
+
+
+```{r}
+library(waffle)
+
+crops %>% 
+  filter(SubCounty != "KENYA") %>%
+  pivot_longer(cols = 3:ncol(crops), names_to = "crop") %>%
+  filter(!is.na(value)) %>%
+  ggplot(aes(fill = SubCounty, values = value/1000), colour = NA) + 
+  geom_waffle(n_rows = 10, make_proportional = T) + 
+  facet_wrap(~crop) + 
+  theme_void() +
+  theme(legend.position = "")
+
+```
+
+
+```{r}
+ggsave("testing.pdf")
+ ```
+
